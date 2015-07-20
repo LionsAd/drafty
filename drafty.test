@@ -263,7 +263,7 @@ class DraftyFieldCollectionTest extends DraftyWebTestCase {
 /**
  * Test draft revisions with entity translation.
  */
-class DraftyEtTest extends  EntityTranslationTestCase {
+class DraftyEtTest extends EntityTranslationTestCase {
   public static function getInfo() {
     return array(
       'name' => 'Drafty Entity Translation',
@@ -279,6 +279,39 @@ class DraftyEtTest extends  EntityTranslationTestCase {
     $this->addLanguage('es');
     $this->configureContentType();
     $this->login($this->getTranslatorUser());
+  }
+
+  /**
+
+   * Create a translation.
+   *
+   * This overrides because with drafty, asserting an 'edit' link for a
+   * translation fails when the revision with the added translation has not yet
+   * been published.
+   *
+   * @param $node
+   *   Node of the basic page to create translation for.
+   * @param $title
+   *   Title of the basic page in the specified language.
+   * @param $body
+   *   Body of the basic page in the specified language.
+   * @param $langcode
+   *   The language code to be assigned to the specified values.
+   */
+  function createTranslation($node, $title, $body, $langcode, $source_langcode = 'en') {
+    $this->drupalGet('node/' . $node->nid . '/edit/add/' . $source_langcode . '/' . $langcode);
+
+    $body_key = "body[$langcode][0][value]";
+    $this->assertFieldByXPath("//textarea[@name='$body_key']", $node->body[$source_langcode][0]['value'], 'Original body value correctly populated.');
+    $this->assertFieldById('edit-body-' . $langcode . '-add-more', t('Add another item'), t('Add another item button found.'));
+
+    $edit = array();
+    $edit[$body_key] = $body;
+
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->drupalGet('node/' . $node->nid . '/translate');
+
+    return $node;
   }
 
   /**
